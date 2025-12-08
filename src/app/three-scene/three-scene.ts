@@ -96,7 +96,15 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.animate();
       window.addEventListener('resize', this.onWindowResizeBound);
       this.initChestAudio();
-      //this.setupBackgroundAudio('/assets/audios/Strawberry.mp3');
+      this.setupBackgroundAudio('assets/audios/Strawberry.mp3');
+      this.setupKeyboardControls();
+      // --- ADD GLOBAL INTERACTION LISTENER ---
+        window.addEventListener('mousedown', this.handleFirstInteractionBound, { once: true });
+        window.addEventListener('keydown', this.handleFirstInteractionBound, { once: true });
+        // ---------------------------------------
+        
+        this.animate();
+        window.addEventListener('resize', this.onWindowResizeBound);
     });
   }
 
@@ -107,7 +115,26 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.renderer?.dispose();
     this.closePhotoAlbumModal();
     this.stopChestAudio();
+    // --- CLEAN UP ---
+    window.removeEventListener('mousedown', this.handleFirstInteractionBound);
+    window.removeEventListener('keydown', this.handleFirstInteractionBound);
+    // ----------------
   }
+
+  // The bound handler and the method itself:
+private handleFirstInteractionBound = this.handleFirstInteraction.bind(this);
+
+private handleFirstInteraction() {
+    if (this.backgroundMusic && this.backgroundMusic.paused) {
+        this.backgroundMusic.play().catch(error => {
+             console.error("Music play failed on interaction:", error);
+        });
+        
+        // Remove the listeners after successful interaction
+        window.removeEventListener('mousedown', this.handleFirstInteractionBound);
+        window.removeEventListener('keydown', this.handleFirstInteractionBound);
+    }
+}
 
   /** ----------------- AUDIO SETUP ----------------- */
 private setupBackgroundAudio(url: string) {
@@ -785,7 +812,7 @@ private initChestAudio() {
   private loadPlayerModel() {
     const loader = new GLTFLoader();
     loader.load(
-      '/assets/models/Animated_Woman.glb',
+      'assets/models/Animated_Woman.glb',
       (gltf) => {
         this.playerModel = gltf.scene;
         this.playerModel.scale.set(1, 1, 1);
