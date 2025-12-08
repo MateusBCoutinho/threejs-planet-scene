@@ -65,16 +65,32 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   // Photo album data
   private photos = [
     { 
-      src: 'assets/pictures/sediment.jpg', 
-      caption: 'A beautiful layered sediment formation showing geological history over millions of years.' 
+      src: 'assets/pictures/óculos.jpg', 
+      caption: 'ESTA FOTO TA MUITO TUFFF' 
     },
     { 
-      src: 'assets/pictures/TAMEE.jpg', 
-      caption: 'The majestic TAMEE mountain peak at sunrise, capturing the serene beauty of nature.' 
+      src: 'assets/pictures/wrapped.png', 
+      caption: 'O meu Spotify wrapped de 2025, resume bem o meu ano.' 
     },
     { 
-      src: 'assets/pictures/VHS.jpg', 
-      caption: 'A nostalgic collection of VHS tapes, reminiscent of 80s and 90s movie nights.' 
+      src: 'assets/pictures/hand1.jpg', 
+      caption: 'Minha mão esquerda, a que segura firme (ainda mais nesse dia).' 
+    },
+    { 
+      src: 'assets/pictures/gato.jpg', 
+      caption: 'O gatinho que tu te esqueceste dele no teu caderno :( Agora ele tá aqui contigo.' 
+    },
+    { 
+      src: 'assets/pictures/biblioteca.jpg', 
+      caption: 'Um dos vários momentos nossos a estudar intensamente na biblioteca.' 
+    },
+    { 
+      src: 'assets/pictures/hand2.jpg', 
+      caption: 'Quando eu voltei para casa e tu me fizeste este smile e eu tirei foto. Foi naquele dia que disseste para eu não lavar e eu deixei até o dia seguinte' 
+    },
+    { 
+      src: 'assets/pictures/barrits.jpg', 
+      caption: 'Uma das minhas fotos favoritas tuas, apesar de ter sido difícil escolher. És a strawberry blonde mais bonita, elegante, aesthetic, engraçada, inteligente e amiga deste mundo, a minha strawberry blonde. Love you :)' 
     }
   ];
   private currentPhotoIndex = 0;
@@ -1136,10 +1152,10 @@ private initChestAudio() {
     max-width: 500px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   `;
   const title = document.createElement('h1');
-  title.textContent = '🎉 Congrats! 🎉';
+  title.textContent = '🎉 PARABÉNS! 🎉';
   title.style.cssText = `color: #333; font-size: 2.5em; margin: 0 0 20px 0;`;
   const message = document.createElement('p');
-  message.textContent = 'You found the hidden chest!';
+  message.textContent = 'Uma lembrança minha para os teus 21 anos :) Aproveita a música e o momento!';
   message.style.cssText = `color: #666; font-size: 1.2em; margin: 0 0 30px 0;`;
   
   // Add audio controls
