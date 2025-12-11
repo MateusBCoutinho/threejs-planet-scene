@@ -66,27 +66,31 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private photos = [
     { 
       src: 'assets/pictures/óculos.jpg', 
-      caption: 'ESTA FOTO TA MUITO TUFFF' 
+      caption: 'esta foto ganhou o prémio de foto mais tuff de 2025' 
     },
     { 
       src: 'assets/pictures/wrapped.png', 
-      caption: 'O meu Spotify wrapped de 2025, resume bem o meu ano.' 
+      caption: 'O meu Spotify wrapped de 2025, resume bem o meu ano' 
     },
     { 
       src: 'assets/pictures/hand1.jpg', 
-      caption: 'Minha mão esquerda, a que segura firme (ainda mais nesse dia).' 
+      caption: 'Minha mão esquerda, a que segura firme (ainda mais nesse dia)' 
     },
     { 
       src: 'assets/pictures/gato.jpg', 
-      caption: 'O gatinho que tu te esqueceste dele no teu caderno :( Agora ele tá aqui contigo.' 
+      caption: 'O gatinho que tu te esqueceste dele no teu caderno :( Agora ele tá aqui contigo' 
     },
     { 
       src: 'assets/pictures/biblioteca.jpg', 
-      caption: 'Um dos vários momentos nossos a estudar intensamente na biblioteca.' 
+      caption: 'Um dos vários momentos nossos a estudar intensamente na biblioteca' 
     },
     { 
       src: 'assets/pictures/hand2.jpg', 
       caption: 'Quando eu voltei para casa e tu me fizeste este smile e eu tirei foto. Foi naquele dia que disseste para eu não lavar e eu deixei até o dia seguinte' 
+    },
+    { 
+      src: 'assets/pictures/nos1.jpg', 
+      caption: 'Esta foto está melhor que aquelas que aparecem no pinterest de couple picture ideas' 
     },
     { 
       src: 'assets/pictures/barrits.jpg', 
