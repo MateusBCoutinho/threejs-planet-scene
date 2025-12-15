@@ -7,6 +7,12 @@ import {
   NgZone,
 } from '@angular/core';
 
+/**
+ * Para dar deploy: ng deploy --base-href=https://MateusBCoutinho.github.io/threejs-planet-scene/
+ * Para entrar no site: https://MateusBCoutinho.github.io/threejs-planet-scene/
+ * Para alterar o nome da página, alterar no index.html a tag <title>
+ */
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -116,7 +122,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.animate();
       window.addEventListener('resize', this.onWindowResizeBound);
       this.initChestAudio();
-      this.setupBackgroundAudio('assets/audios/Strawberry.mp3');
+      //this.setupBackgroundAudio('assets/audios/Strawberry.mp3');
       this.setupKeyboardControls();
       // --- ADD GLOBAL INTERACTION LISTENER ---
         window.addEventListener('mousedown', this.handleFirstInteractionBound, { once: true });
@@ -188,6 +194,7 @@ private setupBackgroundAudio(url: string) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.nativeElement.appendChild(this.renderer.domElement);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -212,12 +219,14 @@ private setupBackgroundAudio(url: string) {
     const mainLight = new THREE.DirectionalLight(0xfff4e6, 1.5);
     mainLight.position.set(30, 50, 30);
     mainLight.castShadow = true;
-    mainLight.shadow.camera.left = -50;
-    mainLight.shadow.camera.right = 50;
-    mainLight.shadow.camera.top = 50;
-    mainLight.shadow.camera.bottom = -50;
-    mainLight.shadow.mapSize.width = 2048;
-    mainLight.shadow.mapSize.height = 2048;
+    mainLight.shadow.camera.left = -15;
+    mainLight.shadow.camera.right = 15;
+    mainLight.shadow.camera.top = 15;
+    mainLight.shadow.camera.bottom = -15;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 50;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
     this.scene.add(mainLight);
 
     // Secondary directional light for fill
@@ -722,6 +731,117 @@ private setupBackgroundAudio(url: string) {
       guitar2.castShadow = true;
       this.scene.add(guitar2);
     });
+
+     loader.load('assets/models/antique_table.glb', (gltf) => {
+      const table = gltf.scene;
+      table.scale.set(0.07, 0.07, 0.07);
+      const tableDir = new THREE.Vector3(4, 0,0).normalize();
+      table.position.copy(tableDir.multiplyScalar(this.planetRadius-0.21));
+      table.lookAt(new THREE.Vector3(0, 0, 0));
+      table.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI/2);
+      table.castShadow = true;
+      this.scene.add(table);
+    });
+       loader.load('assets/models/francesinha.glb', (gltf) => {
+      const francesinha = gltf.scene;
+      francesinha.scale.set(2,2, 2);
+      const francesinhaDir = new THREE.Vector3(16, -3,0).normalize();
+      francesinha.position.copy(francesinhaDir.multiplyScalar(this.planetRadius+14.6));
+      francesinha.lookAt(new THREE.Vector3(0, 0, 0));
+      francesinha.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+      francesinha.castShadow = true;
+      this.scene.add(francesinha);
+    });
+       loader.load('assets/models/sushi.glb', (gltf) => {
+      const sushi = gltf.scene;
+      sushi.scale.set(2,2, 2);
+      const sushiDir = new THREE.Vector3(16, 1,0).normalize();
+      sushi.position.copy(sushiDir.multiplyScalar(this.planetRadius+1.35));
+      sushi.lookAt(new THREE.Vector3(0, 0, 0));
+      sushi.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+      sushi.castShadow = true;
+      this.scene.add(sushi);
+    });
+
+       loader.load('assets/models/lamp_post.glb', (gltf) => {
+      const lamp_post = gltf.scene;
+      lamp_post.scale.set(0.05,0.05, 0.05);
+      const lamp_postDir = new THREE.Vector3(1, 1,-1).normalize();
+      lamp_post.position.copy(lamp_postDir.multiplyScalar(this.planetRadius-0.15));
+      lamp_post.lookAt(new THREE.Vector3(0, 0, 0));
+      lamp_post.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+      lamp_post.castShadow = true;
+      this.scene.add(lamp_post);
+    });
+        loader.load('assets/models/lamp_post.glb', (gltf) => {
+      const lamp_post = gltf.scene;
+      lamp_post.scale.set(0.05,0.05, 0.05);
+      const lamp_postDir = new THREE.Vector3(-1,-2, -4).normalize();
+      lamp_post.position.copy(lamp_postDir.multiplyScalar(this.planetRadius-0.15));
+      lamp_post.lookAt(new THREE.Vector3(0, 0, 0));
+      lamp_post.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+      lamp_post.castShadow = true;
+      this.scene.add(lamp_post);
+    });
+     // Example for one of your lamp post loads:
+
+loader.load('assets/models/lamp_post.glb', (gltf) => {
+    const lamp_post = gltf.scene;
+    lamp_post.scale.set(0.05, 0.05, 0.05);
+
+    // 1. Position and Orientation of the Lamp Post
+    const lamp_postDir = new THREE.Vector3(-1, -0.3, 0.2).normalize();
+    // The position is calculated based on the directory vector and planet radius
+    const lampPosition = lamp_postDir.clone().multiplyScalar(this.planetRadius - 0.15); 
+    lamp_post.position.copy(lampPosition);
+    
+    // Rotation and shadowing (ensure these are applied correctly)
+    lamp_post.lookAt(new THREE.Vector3(0, 0, 0));
+    lamp_post.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+    lamp_post.castShadow = true;
+    this.scene.add(lamp_post);
+
+    // --- 2. ADD LIGHT SOURCE (SPOTLIGHT) ---
+    
+    const lampLight = new THREE.SpotLight(0xffcc66, 20); // Color, Intensity
+    lampLight.position.copy(lampPosition);
+    
+    // Offset the light position to the physical location of the lamp bulb
+    // This value depends on the GLB model's geometry and scale (may need adjustment)
+    const lightOffset = new THREE.Vector3(0, 0.5, 0); 
+    
+    // Rotate the offset vector by the lamp post's rotation to align it properly
+    lamp_post.updateWorldMatrix(true, true);
+    lightOffset.applyQuaternion(lamp_post.quaternion); 
+    
+    lampLight.position.add(lightOffset);
+
+    // Configure the light's target to point towards the ground
+    // Use the lamp post's down vector as the target direction
+    const target = new THREE.Object3D();
+    
+    // The target is positioned below the light, aiming at the ground
+    target.position.copy(lampLight.position);
+    target.position.addScaledVector(lamp_post.up.clone().negate(), 5); // Point 5 units down
+    lampLight.target = target;
+
+    // SpotLight properties for a realistic beam
+    lampLight.angle = Math.PI / 8;  // Narrow beam
+    lampLight.penumbra = 0.5;      // Soft edge
+    lampLight.distance = 25;       // Max distance light travels
+
+    // Shadow properties (requires renderer.shadowMap.enabled = true)
+    lampLight.castShadow = true;
+
+    lampLight.shadow.camera.near = 0.1;
+    lampLight.shadow.camera.far = 30;
+    lampLight.shadow.mapSize.width = 1024;
+    lampLight.shadow.mapSize.height = 1024;
+
+    this.scene.add(lampLight);
+    this.scene.add(lampLight.target);
+    // ----------------------------------------
+});
 
     // Removed tree loading from here - moved to separate method
   }
