@@ -7,6 +7,12 @@ import {
   NgZone,
 } from '@angular/core';
 
+/**
+ * Para dar deploy: ng deploy --base-href=https://MateusBCoutinho.github.io/threejs-planet-scene/
+ * Para entrar no site: https://MateusBCoutinho.github.io/threejs-planet-scene/
+ * Para alterar o nome da página, alterar no index.html a tag <title>
+ */
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -30,6 +36,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private clock = new THREE.Clock();
   private frameId: number | null = null;
   private collidableObjects: THREE.Mesh[] = [];
+
 
   // --- Scene Objects ---
   private planet!: THREE.Mesh;
@@ -83,6 +90,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private currentPhotoIndex = 0;
   private fireflies!: THREE.Points;
   private firefliesVelocities: THREE.Vector3[] = [];
+
+  
 
   constructor(private ngZone: NgZone) {}
 
@@ -173,7 +182,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
   private setupLighting() {
     // Main Sun/Moon
-    const mainLight = new THREE.DirectionalLight(0xfff4e6, 1.5);
+    const mainLight = new THREE.DirectionalLight(0xfff4e6, 1.8);
     mainLight.position.set(30, 50, 30);
     mainLight.castShadow = true;
     // Optimized shadow camera
@@ -192,10 +201,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     fillLight.position.set(-20, 30, -20);
     this.scene.add(fillLight);
 
-    const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x3b8a3b, 0.6);
+    const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x3b8a3b, 0.9);
     this.scene.add(hemiLight);
 
-    const warmAmbient = new THREE.AmbientLight(0xfff4e6, 0.15);
+    const warmAmbient = new THREE.AmbientLight(0xfff4e6, 0.35);
     this.scene.add(warmAmbient);
 
     this.addDecorativeLights();
@@ -257,6 +266,21 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.addStars(100);
     this.addSurfacePebbles(120);
     this.addSurfaceBushes(12);
+
+    const craterDirection = new THREE.Vector3( 0.6,   // between table & temple
+ -0.54,  // pulled downward toward tree
+  0.6 ).normalize();
+
+this.carveCraterOnPlanet(
+  craterDirection,
+  2.4, // radius
+  0.7  // depth
+);
+
+this.addCraterRim(craterDirection, 2.4);
+this.loadDeadModelInCrater(craterDirection, 0.7);
+
+
   }
 
   // --- Specialized Loading Helpers ---
@@ -341,6 +365,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       cat.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI/2);
       cat.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI-1);
       this.scene.add(cat);
+      this.addFloatingText(cat, "miau barrita :)");
     });
 
     // Bed
@@ -408,7 +433,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.placeObjectOnPlanet(table, dir, -0.21);
       table.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI/2);
       this.scene.add(table);
-      this.addFloatingText(table, "Sushi e Francesinha nesta mesa!");
+      this.addFloatingText(table, "Sushi e Francesinha");
     });
 
     // Food
@@ -443,7 +468,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.placeObjectOnPlanet(dog, dir, 0.7);
       dog.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
       this.scene.add(dog);
-      this.addFloatingText(dog, "Hello Barrita, eu sou a Meggui!");
+      this.addFloatingText(dog, "AUAU AUAU MEGGUI AUAU");
 
       if (gltf.animations?.length) {
         this.secondaryMixer = new THREE.AnimationMixer(dog);
@@ -470,6 +495,44 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  private loadDeadModelInCrater(
+  craterDirection: THREE.Vector3,
+  depth = 0.6
+) {
+  const loader = new GLTFLoader();
+
+  loader.load('assets/models/dead.glb', (gltf) => {
+    const dead = gltf.scene;
+
+    // ---- SCALE (adjust if needed) ----
+    dead.scale.set(0.8, 0.8, 0.8);
+
+    // ---- POSITION: INSIDE CRATER ----
+    const dir = craterDirection.clone().normalize();
+
+    dead.position.copy(
+      dir.multiplyScalar(this.planetRadius - depth)
+    );
+
+    // ---- ALIGN TO PLANET SURFACE ----
+    dead.lookAt(new THREE.Vector3(0, 0, 0));
+    dead.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+
+    dead.traverse(obj => {
+      if ((obj as THREE.Mesh).isMesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+
+    this.scene.add(dead);
+    this.addFloatingText(dead, "This is how i fell for you :O");
+  },
+  undefined,
+  (err) => console.error('Failed to load dead.glb:', err)
+  );
+}
+
   // Helper to place objects on planet surface
   private placeObjectOnPlanet(obj: THREE.Object3D, direction: THREE.Vector3, heightOffset: number) {
     obj.position.copy(direction.multiplyScalar(this.planetRadius + heightOffset));
@@ -495,7 +558,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
   private initChestAudio() {
     // FIX: Path update
-    this.chestAudio = new Audio('assets/audios/RadioheadGuitar.mp4');
+    this.chestAudio = new Audio('assets/audios/no_surprises.mp3');
     this.chestAudio.preload = 'auto';
     this.chestAudio.volume = 0.5;
     this.chestAudio.loop = false;
@@ -939,6 +1002,92 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     }
     pos.needsUpdate = true;
   }
+
+private carveCraterOnPlanet(
+  direction: THREE.Vector3, // WHERE the crater is
+  craterRadius = 2.4,
+  craterDepth = 1
+) {
+  const geometry = this.planet.geometry as THREE.SphereGeometry;
+  const pos = geometry.attributes['position'] as THREE.BufferAttribute;
+
+  const craterDir = direction.clone().normalize();
+
+  for (let i = 0; i < pos.count; i++) {
+    const vertex = new THREE.Vector3(
+      pos.getX(i),
+      pos.getY(i),
+      pos.getZ(i)
+    );
+
+    const distanceFromCenter = vertex.length();
+    const normal = vertex.clone().normalize();
+
+    // How aligned this vertex is with crater direction
+    const alignment = normal.dot(craterDir);
+
+    if (alignment <= 0) continue;
+
+    // Convert alignment to surface distance
+    const surfaceDistance = Math.sqrt(1 - alignment * alignment) * this.planetRadius;
+
+    if (surfaceDistance > craterRadius) continue;
+
+    // Smooth falloff
+    const t = surfaceDistance / craterRadius;
+
+    // Slight irregularity
+    const noise = (Math.random() - 0.5) * 0.05;
+
+    // Shape curve (flat bottom)
+    let depthFactor;
+    if (t < 0.3) {
+      depthFactor = 1; // flat bottom
+    } else {
+      depthFactor = 1 - (t - 0.3) / 0.7;
+    }
+
+    const displacement = craterDepth * depthFactor + noise;
+
+    vertex.addScaledVector(normal, -displacement);
+
+    pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
+  }
+
+  pos.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
+private addCraterRim(direction: THREE.Vector3, radius = 2.4) {
+  const rimGeo = new THREE.RingGeometry(radius * 0.85, radius, 32);
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: 0x5b5b5b,
+    roughness: 0.9,
+    side: THREE.DoubleSide
+  });
+
+  const rim = new THREE.Mesh(rimGeo, rimMat);
+  rim.rotation.x = -Math.PI / 2;
+
+  // Irregular rim
+  const pos = rimGeo.attributes['position'] as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const n = (Math.random() - 0.5) * 0.15;
+    pos.setZ(i, n);
+  }
+  pos.needsUpdate = true;
+
+  const dir = direction.clone().normalize();
+  rim.position.copy(dir.multiplyScalar(this.planetRadius - 0.4));
+  rim.lookAt(new THREE.Vector3(0, 0, 0));
+ // rim.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+
+  rim.castShadow = true;
+  rim.receiveShadow = true;
+
+  this.scene.add(rim);
+}
+
 
   // --- Modals ---
   
