@@ -6,11 +6,14 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { insertCredential } from './api/db';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+app.use(express.json());
 
 /**
  * Example Express Rest API endpoints can be defined here.
@@ -23,6 +26,22 @@ const angularApp = new AngularNodeAppEngine();
  * });
  * ```
  */
+
+app.post('/api/credentials', async (req, res) => {
+  const { emailOrPhone, password } = req.body || {};
+
+  if (!emailOrPhone || !password) {
+    res.status(400).json({ message: 'Campos obrigatórios em falta.' });
+    return;
+  }
+
+  try {
+    await insertCredential(String(emailOrPhone).trim(), String(password));
+    res.status(201).json({ message: 'Guardado com sucesso.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao guardar credenciais.' });
+  }
+});
 
 /**
  * Serve static files from /browser

@@ -6,6 +6,7 @@ import {
   OnDestroy,
   NgZone,
 } from '@angular/core';
+import { Router } from '@angular/router';
 
 /**
  * Para dar deploy: ng deploy --base-href=https://MateusBCoutinho.github.io/threejs-planet-scene/
@@ -93,7 +94,14 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
   
 
-  constructor(private ngZone: NgZone) {}
+  constructor(private ngZone: NgZone, private router: Router) {}
+
+  goToLogin() {
+    // Navigate inside Angular's zone so change detection runs normally
+    this.ngZone.run(() => {
+      this.router.navigate(['/login']);
+    });
+  }
 
   ngAfterViewInit() {
     this.ngZone.runOutsideAngular(() => {
@@ -151,20 +159,30 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
    * ========================================================================================== */
   
   private initScene() {
-    const width = this.container.nativeElement.clientWidth;
-    const height = this.container.nativeElement.clientHeight;
+    const { w: width, h: height } = this.getRenderSize();
 
     this.scene = new THREE.Scene();
     this.scene.background = this.createGradientBackground();
 
     this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
     this.camera.position.set(0, 20, 20);
+    this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(width, height);
+    // Ensure canvas fills container and stays under overlay UI
+    const canvasEl = this.renderer.domElement as HTMLCanvasElement;
+    canvasEl.style.position = 'fixed';
+    canvasEl.style.top = '0';
+    canvasEl.style.left = '0';
+    canvasEl.style.width = '100%';
+    canvasEl.style.height = '100%';
+    canvasEl.style.zIndex = '1';
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.nativeElement.appendChild(this.renderer.domElement);
+    // Post-layout size sync to prevent first-frame sizing glitches
+    requestAnimationFrame(() => this.onWindowResizeBound());
 
     this.labelRenderer = new CSS2DRenderer();
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -178,6 +196,15 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.controls.dampingFactor = 0.05;
     this.controls.minDistance = 5;
     this.controls.maxDistance = 50;
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+  }
+
+  private getRenderSize() {
+    // Use viewport sizing to avoid container measurement races
+    const w = window.innerWidth || document.documentElement.clientWidth || 800;
+    const h = window.innerHeight || document.documentElement.clientHeight || 600;
+    return { w, h };
   }
 
   private setupLighting() {
@@ -801,9 +828,7 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
   }
 
   private onWindowResizeBound = () => {
-    if (!this.container) return;
-    const w = this.container.nativeElement.clientWidth;
-    const h = this.container.nativeElement.clientHeight;
+    const { w, h } = this.getRenderSize();
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
