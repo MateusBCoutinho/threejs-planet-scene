@@ -59,8 +59,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private attemptedMusicStart = false;
   // FIX: Updated paths to serve from root assets folder
   private playlist: string[] = [
-    'assets/audios/song.m4a',
-    'assets/audios/Strawberry.mp3'
+    'assets/audios/Strawberry fields.mp3',
+    'assets/audios/Irony smells.m4a',
+    'assets/audios/Every Breath You Take.mp3',
+    'assets/audios/Bitter Sweet Symphony.mp3'
   ];
 
   // --- Interaction State ---
@@ -69,7 +71,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private proximityLabels: { model: THREE.Object3D, element: HTMLElement }[] = [];
   
   // --- Constants ---
-  private readonly planetRadius = 8;
+  private readonly planetRadius = 7;
   private readonly playerSpeed = 0.08;
   private readonly turnSpeed = 0.05;
   private readonly constellationString = "RITA";
@@ -86,13 +88,20 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     { src: 'assets/pictures/biblioteca.jpg', caption: 'Um dos vários momentos nossos a estudar intensamente na biblioteca' },
     { src: 'assets/pictures/hand2.jpg', caption: 'Quando eu voltei para casa e tu me fizeste este smile e eu tirei foto. Foi naquele dia que disseste para eu não lavar e eu deixei até o dia seguinte' },
     { src: 'assets/pictures/nos1.jpg', caption: 'Esta foto está melhor que aquelas que aparecem no pinterest de couple picture ideas' },
-    { src: 'assets/pictures/barrits.jpg', caption: 'Uma das minhas fotos favoritas tuas, apesar de ter sido difícil escolher. És a strawberry blonde mais bonita, elegante, aesthetic, engraçada, inteligente e amiga deste mundo, a minha strawberry blonde. Love you :)' }
+    { src: 'assets/pictures/aviao.jpg', caption: 'O teu voo de volta para Portugal da Suíça super fancy. Consegui tirar foto enquanto estavas lá sem nem saberes, muito tuff né' },
+    { src: 'assets/pictures/barrits2.jpg', caption: 'Uma das minhas fotos favoritas tuas, apesar de ter sido difícil escolher. És a strawberry blonde mais bonita, elegante, aesthetic, engraçada, inteligente e amiga deste mundo, a minha strawberry blonde. Espero que tu aproveites o teu dia, mesmo que seja na época de exames cuz you desrve it anyways. Love you :)' }
   ];
   private currentPhotoIndex = 0;
   private fireflies!: THREE.Points;
   private firefliesVelocities: THREE.Vector3[] = [];
 
-  
+  private lightWellDir = new THREE.Vector3(-1.4, -0.3, 0).normalize();
+
+  // Inside class ThreeSceneComponent:
+
+private heartGeometry!: THREE.BufferGeometry;
+private heartMesh!: THREE.Line;
+private heartTime = 0; // To track the 'a' variable
 
   constructor(private ngZone: NgZone, private router: Router) {}
 
@@ -114,6 +123,9 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.createAtmosphere();
       this.beautifyPlanet();
       this.createConstellation(this.constellationString, 60);
+      this.createMathHeart();
+      this.addLightWellSource();
+      
       
       // 3. Object Loading
       this.loadPlayerModel();
@@ -125,6 +137,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       // 4. UI & Controls
       this.createAudioUI();
       this.setupInputs();
+      this.createStartButton();
       
       // 5. Audio Init
       this.initChestAudio();
@@ -250,6 +263,76 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     ctx.fillRect(0, 0, 1, 256);
     return new THREE.Color(0x101520); // Fallback
   }
+
+  private createMathHeart() {
+    // 1. Setup Geometry with empty points initially
+    const pointCount = 500; // Resolution of the curve
+    this.heartGeometry = new THREE.BufferGeometry();
+    
+    // We create a buffer for 3D positions (x, y, z)
+    const positions = new Float32Array(pointCount * 3);
+    this.heartGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    // 2. Material (Neon Pink line)
+    const material = new THREE.LineBasicMaterial({ 
+        color: 0xff0055, // Hot pink
+        linewidth: 2     // Note: WebGL often ignores linewidth > 1, but it's good to set
+    });
+
+    // 3. Create the Line Mesh
+    this.heartMesh = new THREE.Line(this.heartGeometry, material);
+    
+    // 4. Position it in the sky
+    this.heartMesh.position.set(0, 30, -20); // High up and slightly back
+    this.heartMesh.scale.set(3, 3, 3);       // Make it bigger
+    
+    this.scene.add(this.heartMesh);
+}
+
+private updateHeartAnimation() {
+    if (!this.heartGeometry) return;
+
+    const positions = this.heartGeometry.attributes['position'].array as Float32Array;
+    const pointCount = positions.length / 3;
+    
+    // Max x range is sqrt(3.3) ≈ 1.816
+    const xMax = Math.sqrt(3.3);
+    const xMin = -xMax;
+    const range = xMax - xMin;
+
+    // Animate 'a' over time (Oscillate between 1 and 15)
+    // Changing this speed or range changes how fast the heart "vibrates"
+    this.heartTime += 0.02;
+    const a = 8 + 7 * Math.sin(this.heartTime); 
+
+    for (let i = 0; i < pointCount; i++) {
+        // Normalize 'i' to get x value across the domain
+        const x = xMin + (i / (pointCount - 1)) * range;
+
+        // --- THE EQUATION ---
+        // JS Math.pow(x, 2/3) returns NaN for negative numbers, 
+        // so we use Math.pow(Math.abs(x), 2/3)
+        const term1 = Math.pow(Math.abs(x), 2/3);
+        
+        // sqrt(3.3 - x^2)
+        const term2 = Math.sqrt(3.3 - x * x);
+        
+        // sin(a * pi * x)
+        const term3 = Math.sin(a * Math.PI * x);
+
+        const y = term1 + 0.9 * term2 * term3;
+        // --------------------
+
+        // Update Position Array (Index * 3 because x,y,z)
+        positions[i * 3] = x;     // X coordinate
+        positions[i * 3 + 1] = y; // Y coordinate (calculated)
+        positions[i * 3 + 2] = 0; // Z coordinate (flat 2D shape)
+    }
+
+    // Tell Three.js the points have changed
+    this.heartGeometry.attributes['position'].needsUpdate = true;
+}
+
 
   /** ==========================================================================================
    * SECTION 2: WORLD GENERATION (Planet, Atmosphere, Environment)
@@ -399,11 +482,12 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
     loader.load('assets/models/Bed2.glb', (gltf) => {
       const bed = gltf.scene;
       bed.scale.set(2, 2, 2);
-      const dir = new THREE.Vector3(-1, -1, -1).normalize();
-      this.placeObjectOnPlanet(bed, dir, -0.15);
-      bed.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI/2);
+      const dir = new THREE.Vector3(-1, 7, -2).normalize();
+      this.placeObjectOnPlanet(bed, dir, 0.01);
+      bed.rotateOnAxis(new THREE.Vector3(1, 0, 0), -Math.PI/2-0.2);
       bed.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI-5);
       this.scene.add(bed);
+      this.addFloatingText(bed, "a tua cama enquanto não tens uma");
     });
 
     // Bag
@@ -416,6 +500,7 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
       bag.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI/3);
       bag.rotateOnAxis(new THREE.Vector3(0, 0, 1), Math.PI/10);
       this.scene.add(bag);
+      this.addFloatingText(bag, "bolsa prada tuff");
     });
 
     // Temple
@@ -491,7 +576,7 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
     loader.load('assets/models/dog.glb', (gltf) => {
       const dog = gltf.scene;
       dog.scale.set(0.5, 0.5, 0.5);
-      const dir = new THREE.Vector3(1, 0, -1.1).normalize();
+      const dir = new THREE.Vector3(1, -1, -1.1).normalize();
       this.placeObjectOnPlanet(dog, dir, 0.7);
       dog.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
       this.scene.add(dog);
@@ -501,6 +586,29 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
         this.secondaryMixer = new THREE.AnimationMixer(dog);
         this.secondaryMixer.clipAction(gltf.animations[0]).play();
       }
+    });
+
+      loader.load('assets/models/plastic_makeup_kit_model.glb', (gltf) => {
+      const obj = gltf.scene;
+      obj.scale.set(0.01, 0.01, 0.01);
+      const dir = new THREE.Vector3(-11.5, 4.8, 0).normalize();
+      obj.position.copy(dir.multiplyScalar(this.planetRadius ));
+      obj.lookAt(new THREE.Vector3(0,0,0));
+      obj.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+      obj.castShadow = true;
+      this.scene.add(obj);
+      this.addFloatingText(obj, "maquilhagem tuff e mais uma bolsa");
+    });
+
+     loader.load('assets/models/purse.glb', (gltf) => {
+      const obj = gltf.scene;
+      obj.scale.set(0.0015, 0.0015, 0.0015);
+      const dir = new THREE.Vector3(-9.5, 3.8, 2.3).normalize();
+      obj.position.copy(dir.multiplyScalar(this.planetRadius + 0.18));
+      obj.lookAt(new THREE.Vector3(0,0,0));
+      obj.rotateOnAxis(new THREE.Vector3(1, 0, 0), -1.5);
+      obj.castShadow = true;
+      this.scene.add(obj);
     });
 
     // Test Item (Box + Billboard)
@@ -587,7 +695,7 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
     // FIX: Path update
     this.chestAudio = new Audio('assets/audios/no_surprises.mp3');
     this.chestAudio.preload = 'auto';
-    this.chestAudio.volume = 0.5;
+    this.chestAudio.volume = 0.7;
     this.chestAudio.loop = false;
   }
 
@@ -599,33 +707,49 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
         padding: 15px; border-radius: 12px; color: white; font-family: Arial, sans-serif;
         display: flex; flex-direction: column; gap: 10px; z-index: 1000;
         backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.2);
-        min-width: 150px;
+        min-width: 180px;
     `;
 
     const title = document.createElement('div');
     title.id = 'song-title';
     title.textContent = '🎵 Music: Paused';
     title.style.fontSize = '12px';
+    title.style.whiteSpace = 'nowrap';
+    title.style.overflow = 'hidden';
+    title.style.textOverflow = 'ellipsis';
     container.appendChild(title);
 
     const controls = document.createElement('div');
     controls.style.display = 'flex';
-    controls.style.gap = '10px';
+    controls.style.gap = '8px';
+    controls.style.justifyContent = 'center';
     controls.style.alignItems = 'center';
 
+    // --- PREVIOUS BUTTON ---
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = '⏮';
+    prevBtn.style.cssText = 'background: #444; border: none; color: white; padding: 8px; cursor: pointer; border-radius: 4px; flex: 1;';
+    prevBtn.onclick = () => this.prevSong();
+
+    // --- PLAY/PAUSE BUTTON ---
+    const playBtn = document.createElement('button');
+    playBtn.id = 'play-pause-btn';
+    playBtn.innerHTML = '▶'; // Start with Play icon
+    playBtn.style.cssText = 'background: #ff0055; border: none; color: white; padding: 8px; cursor: pointer; border-radius: 4px; flex: 1; font-size: 1.2em;';
+    playBtn.onclick = () => this.togglePlay();
+
+    // --- NEXT BUTTON ---
     const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = '⏭ Skip';
-    nextBtn.style.cssText = 'background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 4px;';
-    nextBtn.onclick = () => this.skipSong();
+    nextBtn.innerHTML = '⏭';
+    nextBtn.style.cssText = 'background: #444; border: none; color: white; padding: 8px; cursor: pointer; border-radius: 4px; flex: 1;';
+    nextBtn.onclick = () => this.skipSong(); // skipSong acts as "Next"
     
+    controls.appendChild(prevBtn);
+    controls.appendChild(playBtn);
     controls.appendChild(nextBtn);
     container.appendChild(controls);
 
-    const volumeLabel = document.createElement('div');
-    volumeLabel.textContent = 'Volume';
-    volumeLabel.style.fontSize = '10px';
-    container.appendChild(volumeLabel);
-
+    // Volume Slider
     const volumeSlider = document.createElement('input');
     volumeSlider.type = 'range';
     volumeSlider.min = '0';
@@ -640,36 +764,67 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
     container.appendChild(volumeSlider);
 
     document.body.appendChild(container);
-  }
+}
 
-  private skipSong() {
+private togglePlay() {
+    if (!this.backgroundMusic) return;
+
+    const playBtn = document.getElementById('play-pause-btn');
+    
+    if (this.backgroundMusic.paused) {
+        this.backgroundMusic.play().then(() => {
+            this.updateMusicUI();
+        }).catch(e => console.warn("Playback blocked:", e));
+    } else {
+        this.backgroundMusic.pause();
+        this.updateMusicUI();
+    }
+}
+
+private prevSong() {
+    if (!this.backgroundMusic) return;
+
+    // Go back one, or loop to the end if at the start
+    this.currentSongIndex = (this.currentSongIndex - 1 + this.playlist.length) % this.playlist.length;
+    this.loadAndPlayCurrent();
+}
+
+// Rename skipSong logic or just have it call a shared loader
+private skipSong() {
     if (!this.backgroundMusic) return;
 
     this.currentSongIndex = (this.currentSongIndex + 1) % this.playlist.length;
-    
+    this.loadAndPlayCurrent();
+}
+
+// Helper to keep code clean
+private loadAndPlayCurrent() {
     this.backgroundMusic.pause();
     this.backgroundMusic.src = this.playlist[this.currentSongIndex];
     this.backgroundMusic.load();
-    
-    // Attempt play
-    const playPromise = this.backgroundMusic.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        this.updateMusicUI();
-      }).catch(e => {
-        console.warn("Auto-play blocked on skip:", e);
-      });
-    }
-  }
+    this.backgroundMusic.play()
+        .then(() => this.updateMusicUI())
+        .catch(e => console.warn("Auto-play blocked:", e));
+}
 
   private updateMusicUI() {
     const title = document.getElementById('song-title');
-    if (title) {
-        // Show file name without path
-        const songName = this.playlist[this.currentSongIndex].split('/').pop();
-        title.textContent = `🎵 Playing: ${songName}`;
+    const playBtn = document.getElementById('play-pause-btn');
+
+    if (this.backgroundMusic) {
+        // Update Title
+        if (title) {
+            const songName = this.playlist[this.currentSongIndex].split('/').pop();
+            const status = this.backgroundMusic.paused ? 'Paused' : 'Playing';
+            title.textContent = `🎵 ${status}: ${songName}`;
+        }
+
+        // Update Button Icon
+        if (playBtn) {
+            playBtn.innerHTML = this.backgroundMusic.paused ? '▶' : '⏸';
+        }
     }
-  }
+}
 
   /** ==========================================================================================
    * SECTION 4: PLAYER LOGIC & INPUTS
@@ -799,6 +954,9 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
       this.controls.target.copy(this.playerModel.position);
     }
     this.controls.update();
+
+    this.updateHeartAnimation();
+    
     
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
@@ -856,6 +1014,29 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
       grd.addColorStop(1, `rgba(59,138,59,0)`);
       ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
     }
+
+    // --- IRREGULAR GREY CARPET ---
+// Choose a center point (in UV coordinates 0 to 1024)
+
+const targetDir = new THREE.Vector3(-2, -2, -1).normalize(); // Pointing towards your bed area
+
+// Convert 3D direction to UV coordinates
+const carpetU = 0.5 + Math.atan2(targetDir.z, targetDir.x) / (2 * Math.PI);
+const carpetV = 0.5 - Math.asin(targetDir.y) / Math.PI;
+
+const carpetX = carpetU * size;
+const carpetY = carpetV * size;
+ctx.fillStyle = '#ffffff'; // Dark grey
+for (let i = 0; i < 8; i++) {
+    const rx = carpetX + (Math.random() - 0.5) * 200;
+    const ry = carpetY + (Math.random() - 0.5) * 200;
+    ctx.beginPath();
+    ctx.arc(rx, ry, 30 + Math.random() * 30, 0, Math.PI * 2);
+    ctx.fill();
+}
+// -----------------------------
+
+  
     
     // Speckles
     ctx.fillStyle = 'rgba(0,0,0,0.03)';
@@ -880,6 +1061,26 @@ this.loadDeadModelInCrater(craterDirection, 0.7);
     this.scene.add(group);
   }
 
+  private addLightWellSource() {
+    // 1. The actual light coming out of the hole
+    const light = new THREE.PointLight(0xffcc00, 20, 10); // Color, Intensity, Distance
+    const lightPos = this.lightWellDir.clone().multiplyScalar(this.planetRadius+0.01);
+    light.position.copy(lightPos);
+    this.scene.add(light);
+
+    // 2. Add a slight "volumetric" glow (optional)
+    const spriteMat = new THREE.SpriteMaterial({
+        map: new THREE.TextureLoader().load('assets/textures/glow.png'), // Use any soft white circle texture
+        color: 0xffcc00,
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending
+    });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(2, 2, 1);
+    sprite.position.copy(lightPos);
+    this.scene.add(sprite);
+}
   private addSurfaceBushes(count: number) {
     // Keeping your original bush logic
     const group = new THREE.Group();
@@ -1115,6 +1316,103 @@ private addCraterRim(direction: THREE.Vector3, radius = 2.4) {
 
 
   // --- Modals ---
+
+  private createStartButton() {
+    const btn = document.createElement('button');
+    btn.innerHTML = 'Começa por aqui';
+    btn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+        border: 2px solid #ff0055;
+        border-radius: 30px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: transform 0.2s;
+    `;
+
+    btn.onmouseover = () => btn.style.transform = 'scale(1.1)';
+    btn.onmouseout = () => btn.style.transform = 'scale(1.0)';
+    
+    btn.onclick = () => this.showMapModal();
+
+    document.body.appendChild(btn);
+}
+
+private showMapModal() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7); display: flex; align-items: center;
+        justify-content: center; z-index: 2000;
+    `;
+
+    const modal = document.createElement('div');
+   modal.style.cssText = `
+    width: 500px;
+    height: 590px;
+    background-image: url('assets/pictures/map.png');
+    background-size: 110%, 110%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 15px;
+    position: relative; 
+    display: flex;
+    flex-direction: column;
+    
+    /* 1. Change this to 'flex-start' or keep 'center' depending on look */
+    align-items: center; 
+    justify-content: center;
+    
+    /* 2. ADJUST PADDING HERE */
+    padding: 60px 30px 60px 85px; 
+    
+    box-sizing: border-box; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    color: rgb(76, 0, 153);
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    font-weight: bold;
+    line-height: 1.4;
+`;
+
+    // The text content
+    const text = document.createElement('div');
+    text.innerHTML = `
+        <h2 style="margin-top:0;">Bem-vinda, my babe</h2>
+        <h4 style="font-size: 1.1em; line-height: 1.6;">
+           Este é o teu planeta que eu te fiz 100% à mão. </br>
+           <br>
+           Usa as setas do teclado ou as teclas W, A, S, D (preferível) para te moveres. </br>
+           <br>
+           Clica no 'O' quando estiveres perto de alguns objetos especiais. </br>
+            <br>
+            Repara em TODOS os detalhessss <3 </br>
+            <br>
+           Espero que gostes :D
+        </h4>
+    `;
+    modal.appendChild(text);
+
+    // Close Button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = 'Fechar';
+    closeBtn.style.cssText = `
+        margin-top: 20px; padding: 8px 16px; background: #fff;
+        border: none; border-radius: 5px; cursor: pointer; color: #333;
+        font-weight: bold;
+    `;
+    closeBtn.onclick = () => overlay.remove();
+    
+    modal.appendChild(closeBtn);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
   
   private showCongratsModal() {
     if (this.backgroundMusic) this.backgroundMusic.pause();
@@ -1125,7 +1423,7 @@ private addCraterRim(direction: THREE.Vector3, radius = 2.4) {
     
     const content = document.createElement('div');
     content.style.cssText = 'background: white; padding: 40px; border-radius: 10px; text-align: center; font-family: sans-serif;';
-    content.innerHTML = `<h1>🎉 PARABÉNSSSS! 🎉</h1><p>Uma lembrança para os teus 21 anos!</p>`;
+    content.innerHTML = `<h1>🎉 PARABÉNSSSS! 🎉</h1><p>Uma lembrança para os teus 21 anos! Espero que tu gostes do primeiro take que eu gravei com a minha interface nova</p>`;
     
     const closeBtn = document.createElement('button');
     closeBtn.textContent = 'Close';
